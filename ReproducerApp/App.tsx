@@ -5,8 +5,15 @@
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { PureComponent, useEffect } from 'react';
+import {
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  useColorScheme,
+  TextInput,
+} from 'react-native';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -23,17 +30,53 @@ function App() {
   );
 }
 
+const HOOK_KEY = 'hookKey';
+const CLASS_KEY = 'classKey';
+
 function AppContent() {
   const safeAreaInsets = useSafeAreaInsets();
 
+  useEffect(() => {
+    AsyncStorage.getItem(HOOK_KEY).then(v =>
+      console.debug('Hook cleanup called at', v),
+    );
+
+    return () => {
+      AsyncStorage.setItem(HOOK_KEY, new Date().toISOString());
+    };
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
+    <ScrollView
+      style={[
+        styles.container,
+        { marginTop: safeAreaInsets.top, marginBottom: safeAreaInsets.bottom },
+      ]}
+      keyboardShouldPersistTaps="never"
+    >
+      <TextInput
+        placeholder="Your text goes here"
+        style={{ borderWidth: 1, borderColor: 'red' }}
       />
-    </View>
+      <ClassComponentReproducer />
+    </ScrollView>
   );
+}
+
+class ClassComponentReproducer extends PureComponent {
+  componentDidMount(): void {
+    AsyncStorage.getItem(CLASS_KEY).then(v =>
+      console.debug('Class componentWillUnmount called at', v),
+    );
+  }
+
+  componentWillUnmount(): void {
+    AsyncStorage.setItem(CLASS_KEY, new Date().toISOString());
+  }
+
+  render() {
+    return null;
+  }
 }
 
 const styles = StyleSheet.create({
